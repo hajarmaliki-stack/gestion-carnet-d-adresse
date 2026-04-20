@@ -7,6 +7,20 @@ class AdressBook:
         self.contacts = []
 
     def add_contact(self, contact: Contact):
+        if contact in self.contacts:
+            print("Ce contact existe déjà dans le carnet d'adresses.")
+            return
+        for con in self.contacts:
+            if con.nom.lower() == contact.nom.lower():
+                print("Un contact avec ce nom existe déjà dans le carnet d'adresses.")
+                return
+            elif con.email.lower() == contact.email.lower():
+                print("Un contact avec cet email existe déjà dans le carnet d'adresses.")
+                return
+            elif con.numéro.lower() == contact.numéro.lower():
+                print("Un contact avec ce numéro existe déjà dans le carnet d'adresses.")
+                return
+    
         self.contacts.append(contact)
         print("Contact ajouté avec succès !")
 
