@@ -48,7 +48,7 @@ def main():
                 print(f"Erreur : {err}")
 
         elif choice == "2":
-            nom = input("Nom/email/numéro de contact à supprimer : ").strip()
+            nom = input("Nom de contact à supprimer : ").strip()
             book.remove_contact(nom)
 
         elif choice == "3":

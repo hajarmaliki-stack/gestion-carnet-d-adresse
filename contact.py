@@ -18,5 +18,18 @@ class Contact:
 
     def __repr__(self):
         return f"Contact({self.nom!r}, {self.email!r}, {self.numéro!r})"
+    
+    def to_dict(self):
+        return {
+            "nom": self.nom,
+            "email":self.email,
+            "numero":self.numéro
+        }
+    
+    def from_dict(self, data):
+        self = data
+        return self
+
+
 
     
