@@ -4,10 +4,12 @@ class Contact:
     def __init__(self, nom: str, email: str, numéro: str):
         assert isinstance(nom, str) and nom.strip(), "Le nom doit être une chaîne non vide."
         pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-        pattern_numéro = r"^(06|07)\d{8}$"
+        # Ajout du support pour les numéros avec espaces comme dans le screenshot
+        pattern_numéro = r"^[0-9\s]+$"
+        
         assert re.fullmatch(pattern, email) is not None, "Adresse email invalide."
         assert re.fullmatch(pattern_numéro, numéro) is not None, \
-            "Le numéro doit comporter 10 chiffres et commencer par 06 ou 07."
+            "Le numéro doit comporter des chiffres (et des espaces)."
 
         self.nom = nom.strip()
         self.email = email.strip()
@@ -22,14 +24,14 @@ class Contact:
     def to_dict(self):
         return {
             "nom": self.nom,
-            "email":self.email,
-            "numero":self.numéro
+            "email": self.email,
+            "numero": self.numéro
         }
     
-    def from_dict(self, data):
-        self = data
-        return self
-
-
-
-    
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            nom=data.get("nom", ""),
+            email=data.get("email", ""),
+            numéro=data.get("numero", "")
+        )
