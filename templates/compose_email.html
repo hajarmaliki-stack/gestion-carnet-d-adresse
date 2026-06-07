@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="compose-page">
+
+  <!-- En-tête -->
+  <div class="compose-header">
+    <div class="compose-header-icon">📧</div>
+    <div>
+      <h2>Envoyer un Email</h2>
+      <p>Destinataire : <strong>{{ contact.nom }}</strong> — <span>{{ contact.email }}</span></p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn-back">← Retour</a>
+  </div>
+
+  <!-- Sélecteur de template médical -->
+  <div class="template-selector-card">
+    <h3>📋 Modèles médicaux prédéfinis</h3>
+    <div class="template-grid">
+      {% for key, tmpl in templates.items() %}
+      <button type="button"
+              class="template-btn {% if key == 'personnalise' %}template-btn-custom{% endif %}"
+              onclick="applyTemplate('{{ key }}')">
+        {% if key == 'confirmation_rdv' %}📅
+        {% elif key == 'rappel_rdv' %}🔔
+        {% elif key == 'demande_resultats' %}🧪
+        {% elif key == 'ordonnance' %}💊
+        {% else %}✏️
+        {% endif %}
+        {{ tmpl.label }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Formulaire de composition -->
+  <div class="compose-form-card">
+    <form method="POST" action="{{ url_for('send_email_route', nom=contact.nom) }}" id="emailForm">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="to_email">📬 Destinataire</label>
+          <input type="email" id="to_email" name="to_email"
+                 value="{{ contact.email }}" required>
+        </div>
+        <div class="form-group">
+          <label for="subject">📌 Objet</label>
+          <input type="text" id="subject" name="subject"
+                 placeholder="Objet du message..." required>
+        </div>
+      </div>
+
+      <!-- Champs variables dynamiques -->
+      <div id="template-fields" class="template-fields" style="display:none;"></div>
+
+      <div class="form-group">
+        <label for="body">✍️ Corps du message</label>
+        <textarea id="body" name="body" rows="10"
+                  placeholder="Rédigez votre message ici..." required></textarea>
+      </div>
+
+      <div class="compose-actions">
+        <button type="button" class="btn btn-secondary" onclick="clearForm()">🗑️ Effacer</button>
+        <button type="submit" class="btn btn-send" id="sendBtn">
+          <span class="btn-icon">✉️</span> Envoyer l'Email
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Lien WhatsApp (bonus) -->
+  <div class="whatsapp-card">
+    <div class="wa-icon">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    </div>
+    <div class="wa-content">
+      <h3>Envoyer via WhatsApp</h3>
+      <p>Numéro : <strong>{{ contact.num }}</strong></p>
+      <p class="wa-note">Cliquez sur le bouton pour ouvrir WhatsApp Web avec un message pré-rempli.</p>
+    </div>
+    <a href="{{ wa_link }}" target="_blank" class="btn-whatsapp" id="wa-btn">
+      Ouvrir WhatsApp Web
+    </a>
+  </div>
+
+  <!-- Personnalisation du message WhatsApp -->
+  <div class="wa-compose-card">
+    <h3>✏️ Personnaliser le message WhatsApp</h3>
+    <div class="wa-template-grid">
+      <button type="button" class="wa-tmpl-btn" onclick="setWaMessage('rdv')">📅 Confirmer RDV</button>
+      <button type="button" class="wa-tmpl-btn" onclick="setWaMessage('rappel')">🔔 Rappel RDV</button>
+      <button type="button" class="wa-tmpl-btn" onclick="setWaMessage('resultats')">🧪 Demander résultats</button>
+      <button type="button" class="wa-tmpl-btn" onclick="setWaMessage('personnalise')">✏️ Personnalisé</button>
+    </div>
+    <div class="wa-input-group">
+      <textarea id="wa-message" rows="4"
+                placeholder="Rédigez votre message WhatsApp...">Bonjour {{ contact.nom }}, nous confirmons votre rendez-vous médical. Merci de votre confiance.</textarea>
+      <button type="button" class="btn btn-send" onclick="updateWaLink()">
+        🔄 Mettre à jour le lien WhatsApp
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Données templates (JSON injecté) -->
+<script>
+const TEMPLATES = {{ templates_json | safe }};
+const contactNom = "{{ contact.nom }}";
+const contactNum = "{{ contact.num }}";
+
+// ─── Templates Email ───────────────────────────────────
+function applyTemplate(key) {
+  // Surligner le bouton actif
+  document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  const tmpl = TEMPLATES[key];
+  if (!tmpl) return;
+
+  document.getElementById('subject').value = tmpl.subject;
+  document.getElementById('body').value = tmpl.body.replace(/{nom}/g, contactNom);
+
+  // Afficher champs variables si besoin
+  renderTemplateFields(key, tmpl.body);
+}
+
+function renderTemplateFields(key, body) {
+  const container = document.getElementById('template-fields');
+  const vars = [...body.matchAll(/{(\w+)}/g)]
+    .map(m => m[1])
+    .filter(v => v !== 'nom');
+
+  const unique = [...new Set(vars)];
+  if (unique.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'grid';
+  container.innerHTML = '<div class="fields-title">📝 Variables du modèle :</div>';
+
+  unique.forEach(v => {
+    const label = {
+      date: '📅 Date', heure: '🕐 Heure', lieu: '📍 Lieu',
+      medecin: '👨‍⚕️ Médecin', traitement: '💊 Traitement', duree: '⏳ Durée'
+    }[v] || v;
+
+    const div = document.createElement('div');
+    div.className = 'form-group';
+    div.innerHTML = `
+      <label for="var_${v}">${label}</label>
+      <input type="text" id="var_${v}" placeholder="${label}..."
+             oninput="updateBodyVariable('${v}', this.value)">
+    `;
+    container.appendChild(div);
+  });
+}
+
+function updateBodyVariable(varName, value) {
+  const bodyEl = document.getElementById('body');
+  // Remplacer toutes les occurrences de {varName} dans le textarea
+  const regex = new RegExp(`\\{${varName}\\}`, 'g');
+  bodyEl.value = bodyEl.value.replace(regex, value || `{${varName}}`);
+}
+
+function clearForm() {
+  document.getElementById('subject').value = '';
+  document.getElementById('body').value = '';
+  document.getElementById('template-fields').style.display = 'none';
+  document.getElementById('template-fields').innerHTML = '';
+  document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ─── WhatsApp ──────────────────────────────────────────
+const WA_MESSAGES = {
+  rdv: `Bonjour ${contactNom}, nous avons le plaisir de confirmer votre rendez-vous médical. Merci de votre confiance.`,
+  rappel: `Bonjour ${contactNom}, ceci est un rappel pour votre rendez-vous médical prévu demain. N'oubliez pas vos documents.`,
+  resultats: `Bonjour, nous vous contactons au sujet des analyses du patient ${contactNom}. Pourriez-vous nous envoyer les résultats dès que possible ? Merci.`,
+  personnalise: ''
+};
+
+function setWaMessage(key) {
+  document.getElementById('wa-message').value = WA_MESSAGES[key] || '';
+  document.querySelectorAll('.wa-tmpl-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+function updateWaLink() {
+  const msg = document.getElementById('wa-message').value;
+  const num = contactNum.replace(/\s|-/g, '');
+
+  // Normalisation numéro marocain
+  let normalized = num;
+  if (normalized.startsWith('06') || normalized.startsWith('07')) {
+    normalized = '212' + normalized.slice(1);
+  } else if (normalized.startsWith('0')) {
+    normalized = '212' + normalized.slice(1);
+  } else if (normalized.startsWith('+')) {
+    normalized = normalized.slice(1);
+  }
+
+  const url = `https://wa.me/${normalized}?text=${encodeURIComponent(msg)}`;
+  document.getElementById('wa-btn').href = url;
+
+  // Animation feedback
+  const btn = document.getElementById('wa-btn');
+  btn.textContent = '✅ Lien mis à jour !';
+  setTimeout(() => { btn.textContent = 'Ouvrir WhatsApp Web'; }, 2000);
+}
+
+// Soumission formulaire : feedback visuel
+document.getElementById('emailForm').addEventListener('submit', function() {
+  const btn = document.getElementById('sendBtn');
+  btn.innerHTML = '<span class="spinner"></span> Envoi en cours...';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}

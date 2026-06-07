@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<!-- ══ Barre de recherche + filtres catégorie + export ══ -->
+<div class="actions-bar">
+    <form method="GET" action="{{ url_for('index') }}" class="search-form">
+        <input type="text" name="search" placeholder="Chercher par nom, numéro, catégorie…"
+               value="{{ search_query }}" id="search-input">
+        <button type="submit">Rechercher</button>
+        {% if search_query %}
+            <a href="{{ url_for('index') }}" class="btn-clear">✕ Effacer</a>
+        {% endif %}
+    </form>
+    <a href="{{ url_for('export') }}" class="btn btn-export">📥 Exporter CSV</a>
+</div>
+
+<!-- ══ Filtres par catégorie (Partie 8) ══ -->
+<div class="category-filters">
+    <a href="{{ url_for('index') }}"
+       class="cat-chip {% if not active_category %}cat-chip-active{% endif %}">
+        Tous ({{ contacts|length }})
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('index', categorie=cat) }}"
+       class="cat-chip cat-chip-{{ cat|lower|replace(' ','') }}
+              {% if active_category == cat %}cat-chip-active{% endif %}">
+        {% if cat == 'Patient' %}🧑‍⚕️
+        {% elif cat == 'Fournisseur' %}📦
+        {% elif cat == 'Laboratoire' %}🧪
+        {% elif cat == 'Médecin' %}👨‍⚕️
+        {% elif cat == 'Pharmacie' %}💊
+        {% else %}📁{% endif %}
+        {{ cat }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- ══ Corps principal ══ -->
+<div class="container">
+
+    <!-- Formulaire Ajouter -->
+    <div class="form-panel">
+        <h3>➕ Ajouter un Contact</h3>
+        <form method="POST" action="{{ url_for('add') }}">
+
+            <div class="form-group">
+                <label>Nom :</label>
+                <input type="text" name="nom" required
+                       pattern="^[a-zA-Z\s]+$"
+                       title="Lettres et espaces uniquement.">
+            </div>
+            <div class="form-group">
+                <label>Email :</label>
+                <input type="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label>Téléphone :</label>
+                <input type="text" name="numero" required
+                       placeholder="Ex: 0612345678"
+                       pattern="^(06|07)\d{8}$"
+                       title="10 chiffres commençant par 06 ou 07.">
+            </div>
+
+            <!-- ── Partie 8 : champs supplémentaires ── -->
+            <div class="separator"><span>Informations supplémentaires</span></div>
+
+            <div class="form-group">
+                <label>Catégorie :</label>
+                <select name="categorie" class="form-select">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">
+                        {% if cat == 'Patient' %}🧑‍⚕️
+                        {% elif cat == 'Fournisseur' %}📦
+                        {% elif cat == 'Laboratoire' %}🧪
+                        {% elif cat == 'Médecin' %}👨‍⚕️
+                        {% elif cat == 'Pharmacie' %}💊
+                        {% else %}📁{% endif %}
+                        {{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fonction :</label>
+                <input type="text" name="fonction" placeholder="Ex: Directeur, Infirmier…">
+            </div>
+            <div class="form-group">
+                <label>Entreprise / Établissement :</label>
+                <input type="text" name="entreprise" placeholder="Ex: Clinique Al Shifa…">
+            </div>
+            <div class="form-group">
+                <label>Adresse :</label>
+                <input type="text" name="adresse" placeholder="Ex: 12 Rue Mohammed V, Casablanca">
+            </div>
+
+            <button type="submit" class="btn btn-success">Ajouter</button>
+        </form>
+    </div>
+
+    <!-- Liste des contacts -->
+    <div class="list-panel">
+        <h3>📋 Liste des Contacts
+            {% if active_category %}
+                <span class="active-filter-badge">{{ active_category }}</span>
+            {% endif %}
+        </h3>
+
+        {% if contacts %}
+        <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Fonction</th>
+                    <th>Entreprise</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in contacts %}
+                <tr onclick="toggleDetails('details-{{ loop.index }}')" class="contact-row">
+                    <td class="td-nom">
+                        <span class="contact-name">{{ contact.nom }}</span>
+                        {% if contact.adresse %}
+                        <span class="contact-addr">📍 {{ contact.adresse }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ contact.categorie|lower|replace(' ','') }}">
+                            {% if contact.categorie == 'Patient' %}🧑‍⚕️
+                            {% elif contact.categorie == 'Fournisseur' %}📦
+                            {% elif contact.categorie == 'Laboratoire' %}🧪
+                            {% elif contact.categorie == 'Médecin' %}👨‍⚕️
+                            {% elif contact.categorie == 'Pharmacie' %}💊
+                            {% else %}📁{% endif %}
+                            {{ contact.categorie }}
+                        </span>
+                    </td>
+                    <td>{{ contact.email }}</td>
+                    <td>{{ contact.num }}</td>
+                    <td>{{ contact.fonction or '—' }}</td>
+                    <td>{{ contact.entreprise or '—' }}</td>
+                    <td class="actions-td" onclick="event.stopPropagation()">
+                        <button onclick="openEditModal(
+                            '{{ contact.nom }}', '{{ contact.email }}', '{{ contact.num }}',
+                            '{{ contact.categorie }}', '{{ contact.adresse }}',
+                            '{{ contact.fonction }}', '{{ contact.entreprise }}')"
+                            class="btn btn-sm btn-primary">Modifier</button>
+                        <form method="POST"
+                              action="{{ url_for('delete', nom=contact.nom) }}"
+                              style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                onclick="return confirm('Supprimer {{ contact.nom }} ?');">
+                                Supprimer
+                            </button>
+                        </form>
+                        <a href="{{ url_for('communicate', nom=contact.nom) }}"
+                           class="btn btn-sm btn-communicate" title="Email / WhatsApp">
+                            Contacter
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <p>Aucun contact trouvé.</p>
+                {% if active_category or search_query %}
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Voir tous les contacts</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ══ Modal Modifier (Partie 8 : champs étendus) ══ -->
+<div id="editModal" class="modal">
+    <div class="modal-content modal-wide">
+        <span class="close-btn" onclick="closeEditModal()">&times;</span>
+        <h3>✏️ Modifier le Contact</h3>
+        <form id="editForm" method="POST" action="">
+
+            <div class="modal-cols">
+                <div class="form-group">
+                    <label>Nom :</label>
+                    <input type="text" id="edit-nom" name="nom" required
+                           pattern="^[a-zA-Z\s]+$">
+                </div>
+                <div class="form-group">
+                    <label>Email :</label>
+                    <input type="email" id="edit-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Téléphone :</label>
+                    <input type="text" id="edit-numero" name="numero" required
+                           pattern="^(06|07)\d{8}$">
+                </div>
+                <div class="form-group">
+                    <label>Catégorie :</label>
+                    <select id="edit-categorie" name="categorie" class="form-select">
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fonction :</label>
+                    <input type="text" id="edit-fonction" name="fonction"
+                           placeholder="Fonction…">
+                </div>
+                <div class="form-group">
+                    <label>Entreprise / Établissement :</label>
+                    <input type="text" id="edit-entreprise" name="entreprise"
+                           placeholder="Établissement…">
+                </div>
+                <div class="form-group modal-full">
+                    <label>Adresse :</label>
+                    <input type="text" id="edit-adresse" name="adresse"
+                           placeholder="Adresse complète…">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">
+                💾 Enregistrer les modifications
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModal(nom, email, numero, categorie, adresse, fonction, entreprise) {
+    document.getElementById('edit-nom').value        = nom;
+    document.getElementById('edit-email').value      = email;
+    document.getElementById('edit-numero').value     = numero;
+    document.getElementById('edit-adresse').value    = adresse;
+    document.getElementById('edit-fonction').value   = fonction;
+    document.getElementById('edit-entreprise').value = entreprise;
+
+    // Sélectionner la catégorie dans le <select>
+    const sel = document.getElementById('edit-categorie');
+    for (let opt of sel.options) {
+        opt.selected = (opt.value === categorie);
+    }
+
+    document.getElementById('editForm').action = "/edit/" + encodeURIComponent(nom);
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('editModal');
+    if (event.target === modal) modal.style.display = 'none';
+}
+
+function toggleDetails(id) {
+    // Extensible pour afficher détails inline (futur)
+}
+</script>
+{% endblock %}

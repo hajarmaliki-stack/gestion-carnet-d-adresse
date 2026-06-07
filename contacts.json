@@ -2,11 +2,11 @@
     {
         "nom": "sana",
         "email": "sana@gmail.com",
-        "numero": "0612345678"
+        "num": "0612345678"
     },
     {
         "nom": "karim",
         "email": "karim@gmail.com",
-        "numero": "0712345678"
+        "num": "0712345678"
     }
 ]

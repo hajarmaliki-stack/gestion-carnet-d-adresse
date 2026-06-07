@@ -16,13 +16,14 @@ def main():
         print("  1. Add Contact")
         print("  2. Remove Contact")
         print("  3. Display Contacts")
-        print("  4. Quit")
+        print("  4. Export CSV")
+        print("  5. Quit")
 
         choice = input("\nVotre choix : ").strip()
 
         regex_nom = r"^[a-zA-Z\s]+$"
         regex_email = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-        regex_numéro = r"^(06|07)\d{8}$"
+        regex_num = r"^(06|07)\d{8}$"
 
         if choice == "1":
 
@@ -37,13 +38,13 @@ def main():
                 print("Erreur : L'email doit être une adresse email valide.")
                 continue
 
-            numéro = input("Téléphone : ").strip()
-            if re.fullmatch(regex_numéro, numéro) is None:
-                print("Erreur : Le numéro de téléphone doit être une chaîne de 10 chiffres commençant par 06 ou 07.")
+            num = input("Téléphone : ").strip()
+            if re.fullmatch(regex_num, num) is None:
+                print("Erreur : Le num de téléphone doit être une chaîne de 10 chiffres commençant par 06 ou 07.")
                 continue
 
             try:
-                book.add_contact(Contact(nom, email, numéro))
+                book.add_contact(Contact(nom, email, num))
             except AssertionError as err:
                 print(f"Erreur : {err}")
 
@@ -55,11 +56,14 @@ def main():
             book.display_contacts()
 
         elif choice == "4":
+            book.export_to_csv()
+
+        elif choice == "5":
             print("👋 Au revoir !")
             break
 
         else:
-            print(" Choix invalide. Veuillez entrer 1, 2, 3 ou 4.")
+            print(" Choix invalide. Veuillez entrer 1, 2, 3, 4 ou 5.")
 
 
 if __name__ == "__main__":

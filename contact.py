@@ -1,37 +1,61 @@
 import re
 
 class Contact:
-    def __init__(self, nom: str, email: str, numéro: str):
-        assert isinstance(nom, str) and nom.strip(), "Le nom doit être une chaîne non vide."
-        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-        # Ajout du support pour les numéros avec espaces comme dans le screenshot
-        pattern_numéro = r"^[0-9\s]+$"
-        
-        assert re.fullmatch(pattern, email) is not None, "Adresse email invalide."
-        assert re.fullmatch(pattern_numéro, numéro) is not None, \
-            "Le numéro doit comporter des chiffres (et des espaces)."
+    def __init__(self, nom: str, email: str, num: str,
+                 categorie: str = "Autre", adresse: str = "",
+                 fonction: str = "", entreprise: str = ""):
+        nom   = nom.strip()
+        email = email.strip()
+        num   = num.strip()
 
-        self.nom = nom.strip()
-        self.email = email.strip()
-        self.numéro = numéro.strip()
+        regex_nom   = r"^[a-zA-Z\s]+$"
+        regex_email = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+        regex_num   = r"^(06|07)\d{8}$"
+
+        assert re.fullmatch(regex_nom, nom)   is not None, \
+            "Le nom doit être une chaîne non vide composée de lettres et d'espaces."
+        assert re.fullmatch(regex_email, email) is not None, \
+            "L'email doit être une adresse email valide."
+        assert re.fullmatch(regex_num, num)   is not None, \
+            "Le numéro de téléphone doit être 10 chiffres commençant par 06 ou 07."
+
+        self.nom        = nom
+        self.email      = email
+        self.num        = num
+        # ── Partie 8 : champs supplémentaires ──────────────────────────
+        self.categorie  = categorie  or "Autre"
+        self.adresse    = adresse    or ""
+        self.fonction   = fonction   or ""
+        self.entreprise = entreprise or ""
 
     def __str__(self):
-        return f"{self.nom} | {self.email} | {self.numéro}"
+        return (f"{self.nom} | {self.email} | {self.num} | "
+                f"{self.categorie} | {self.entreprise}")
 
     def __repr__(self):
-        return f"Contact({self.nom!r}, {self.email!r}, {self.numéro!r})"
-    
+        return (f"Contact({self.nom!r}, {self.email!r}, {self.num!r}, "
+                f"categorie={self.categorie!r})")
+
     def to_dict(self):
         return {
-            "nom": self.nom,
-            "email": self.email,
-            "numero": self.numéro
+            "nom":        self.nom,
+            "email":      self.email,
+            "num":        self.num,
+            "categorie":  self.categorie,
+            "adresse":    self.adresse,
+            "fonction":   self.fonction,
+            "entreprise": self.entreprise,
         }
-    
+
     @classmethod
     def from_dict(cls, data):
         return cls(
-            nom=data.get("nom", ""),
-            email=data.get("email", ""),
-            numéro=data.get("numero", "")
+            nom        = data.get("nom",        ""),
+            email      = data.get("email",      ""),
+            num        = data.get("num",        ""),
+            categorie  = data.get("categorie",  "Autre"),
+            adresse    = data.get("adresse",    ""),
+            fonction   = data.get("fonction",   ""),
+            entreprise = data.get("entreprise", ""),
         )
+

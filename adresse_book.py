@@ -1,84 +1,234 @@
 import os
-import json
+import csv
+import sqlite3
 
 from contact import Contact
+from database import get_connection
+
+# Colonnes complètes (Partie 8)
+_COLS = "nom, email, num, categorie, adresse, fonction, entreprise"
+
 
 class AdressBook:
-    def __init__(self, fichier="contacts.json"):
+    def __init__(self):
         self.contacts = []
-        self.fichier = fichier
-        if not os.path.exists(self.fichier):
-            open(self.fichier, "w", encoding='utf-8').close()
+        self.load_contacts()
 
     def add_contact(self, contact: Contact):
-        self.load_from_file()
-        for con in self.contacts:
-            if con.nom.lower() == contact.nom.lower():
-                print("Un contact avec ce nom existe déjà dans le carnet d'adresses.")
-                return False
-            elif con.numéro.lower() == contact.numéro.lower():
-                print("Un contact avec ce numéro existe déjà dans le carnet d'adresses.")
-                return False
-    
-        self.contacts.append(contact)
-        self.save_to_file()
-        print("Contact ajouté avec succès !")
-        return True
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                f"INSERT INTO contacts ({_COLS}) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (contact.nom, contact.email, contact.num,
+                 contact.categorie, contact.adresse,
+                 contact.fonction, contact.entreprise)
+            )
+            conn.commit()
+            print("Contact ajouté avec succès !")
+            self.load_contacts()
+            success = True
+        except sqlite3.IntegrityError:
+            print("Un contact avec ce nom ou ce numéro existe déjà.")
+            success = False
+        finally:
+            conn.close()
+
+        return success
 
     def remove_contact(self, value: str):
-        self.load_from_file()
-        new_contacts = []
-        found = False
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        for c in self.contacts:
-            if c.nom.lower() != value.lower() and c.numéro.lower() != value.lower():
-                new_contacts.append(c)
-            else:
-                found = True
-        
-        self.contacts = new_contacts
-        self.save_to_file()
+        cursor.execute("SELECT id FROM contacts WHERE nom = ? OR num = ?", (value, value))
+        row = cursor.fetchone()
 
-        if found:
+        if row:
+            cursor.execute("DELETE FROM contacts WHERE id = ?", (row[0],))
+            conn.commit()
             print("Contact supprimé avec succès!")
-        else: 
+            found = True
+        else:
             print("Contact introuvable !")
+            found = False
+
+        conn.close()
+        self.load_contacts()
         return found
 
     def display_contacts(self):
-        self.load_from_file()
+        self.load_contacts()
         if not self.contacts:
             print("Le carnet d'adresses est vide.")
         else:
             print("\nListe des contacts :")
-            print("-" * 50)
+            print("-" * 60)
             for i, contact in enumerate(self.contacts, 1):
                 print(f"{i}. {contact}")
-            print("-" * 50)
+            print("-" * 60)
 
-    def save_to_file(self): 
-        contacts_dict_list = [contact.to_dict() for contact in self.contacts] 
-        try: 
-            with open(self.fichier, 'w', encoding='utf-8') as file: 
-                json.dump(contacts_dict_list, file, indent=4, ensure_ascii=False) 
-        except Exception as e: 
-            print(f"Erreur lors de la sauvegarde : {e}") 
+    def load_contacts(self):
+        """Récupère tous les contacts depuis la base de données SQLite."""
+        self.contacts = []
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    def load_from_file(self):  
-        try: 
-            with open(self.fichier, 'r', encoding='utf-8') as file: 
-                content = file.read().strip()
-                if not content:
-                    self.contacts = []
-                    return
-                contacts_dict_list = json.loads(content)
-            self.contacts = [] 
-            for data in contacts_dict_list: 
-                contact = Contact.from_dict(data) 
-                self.contacts.append(contact) 
-        except FileNotFoundError: 
-            print("Aucun fichier de sauvegarde trouve. Demarrage avec un carnet vide.") 
-            self.contacts = []
-        except json.JSONDecodeError: 
-            print("Erreur : Le fichier de sauvegarde est corrompu.") 
-            self.contacts = []
+        cursor.execute(f"SELECT {_COLS} FROM contacts")
+        rows = cursor.fetchall()
+
+        for row in rows:
+            self.contacts.append(Contact(
+                nom=row[0], email=row[1], num=row[2],
+                categorie=row[3]  if len(row) > 3 else "Autre",
+                adresse=row[4]    if len(row) > 4 else "",
+                fonction=row[5]   if len(row) > 5 else "",
+                entreprise=row[6] if len(row) > 6 else "",
+            ))
+
+        conn.close()
+
+    def export_to_csv(self, filename="contacts.csv"):
+        """Exporte tous les contacts vers un fichier CSV."""
+        self.load_contacts()
+        try:
+            with open(filename, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(["Nom", "Email", "Téléphone",
+                                 "Catégorie", "Adresse", "Fonction", "Entreprise"])
+                for c in self.contacts:
+                    writer.writerow([c.nom, c.email, c.num,
+                                     c.categorie, c.adresse, c.fonction, c.entreprise])
+            print(f"Contacts exportés avec succès dans '{filename}'.")
+            return True
+        except Exception as e:
+            print(f"Erreur lors de l'exportation : {e}")
+            return False
+
+    def update_contact(self, old_nom, new_contact: Contact):
+        """Met à jour un contact existant."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """UPDATE contacts
+                   SET nom=?, email=?, num=?,
+                       categorie=?, adresse=?, fonction=?, entreprise=?
+                   WHERE nom=?""",
+                (new_contact.nom, new_contact.email, new_contact.num,
+                 new_contact.categorie, new_contact.adresse,
+                 new_contact.fonction, new_contact.entreprise,
+                 old_nom)
+            )
+            conn.commit()
+            success = cursor.rowcount > 0
+        except sqlite3.IntegrityError:
+            success = False
+        finally:
+            conn.close()
+
+        if success:
+            self.load_contacts()
+        return success
+
+    def search_contact(self, query):
+        """Recherche des contacts par nom, numéro, catégorie ou entreprise."""
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            f"""SELECT {_COLS} FROM contacts
+                WHERE nom LIKE ? OR num LIKE ?
+                   OR categorie LIKE ? OR entreprise LIKE ?""",
+            (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%")
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [Contact(
+            nom=row[0], email=row[1], num=row[2],
+            categorie=row[3]  if len(row) > 3 else "Autre",
+            adresse=row[4]    if len(row) > 4 else "",
+            fonction=row[5]   if len(row) > 5 else "",
+            entreprise=row[6] if len(row) > 6 else "",
+        ) for row in rows]
+
+    def filter_by_category(self, categorie: str):
+        """Filtre les contacts par catégorie."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT {_COLS} FROM contacts WHERE categorie = ?", (categorie,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [Contact(
+            nom=row[0], email=row[1], num=row[2],
+            categorie=row[3], adresse=row[4],
+            fonction=row[5], entreprise=row[6],
+        ) for row in rows]
+
+    def get_contact_by_name(self, nom):
+        """Récupère l'ID et les détails d'un contact par son nom."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, nom, email, num FROM contacts WHERE nom = ?", (nom,))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {"id": row[0], "nom": row[1], "email": row[2], "num": row[3]}
+        return None
+
+    def get_rendezvous_for_date(self, date):
+        """Récupère tous les rendez-vous pour une date donnée (format YYYY-MM-DD)."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT r.heure, c.id, c.nom, c.email, c.num
+               FROM rendezvous r
+               JOIN contacts c ON r.contact_id = c.id
+               WHERE r.date = ?""",
+            (date,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        res = {}
+        for row in rows:
+            res[row[0]] = {
+                "id": row[1],
+                "nom": row[2],
+                "email": row[3],
+                "num": row[4]
+            }
+        return res
+
+    def add_rendezvous(self, contact_id, date, heure):
+        """Enregistre un nouveau rendez-vous."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        success = False
+        try:
+            cursor.execute(
+                "INSERT INTO rendezvous (contact_id, date, heure) VALUES (?, ?, ?)",
+                (contact_id, date, heure)
+            )
+            conn.commit()
+            success = True
+        except sqlite3.IntegrityError:
+            pass  # Le créneau est déjà pris
+        finally:
+            conn.close()
+        return success
+
+    def delete_rendezvous(self, date, heure):
+        """Supprime un rendez-vous pour une date et une heure données."""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM rendezvous WHERE date = ? AND heure = ?", (date, heure))
+        conn.commit()
+        success = cursor.rowcount > 0
+        conn.close()
+        return success
+
