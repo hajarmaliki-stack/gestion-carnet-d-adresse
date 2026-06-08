@@ -7,16 +7,21 @@ import smtplib
 import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import os
+from dotenv import load_dotenv
 
 
 # ─────────────────────────────────────────────
 #  Configuration SMTP (Gmail)
 #  Remplir avec vos vraies informations
 # ─────────────────────────────────────────────
+load_dotenv()
+
 SMTP_HOST = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USER = ""          # Votre adresse Gmail
-SMTP_PASSWORD = ""      # Votre mot de passe d'application Gmail
+SMTP_USER = os.getenv("SMTP_USER")           # adresse Gmail
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")   # Votre mot de passe d'application Gmail
+     
 
 
 def send_email(to_address: str, subject: str, body: str,
