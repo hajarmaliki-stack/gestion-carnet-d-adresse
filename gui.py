@@ -198,9 +198,10 @@ class Contact_GUI(ContactViewInterface):
         self.tel_var.set("")
         self.listbox.selection_clear(0, tk.END)
 
+    
     def show_contacts(self, contacts: list):
         self.listbox.delete(0, tk.END)
-        for contact in contacts:
+        for contact in sorted(contacts, key=lambda c: c.nom.lower()):
             self.listbox.insert(tk.END, contact.nom)
 
     def show_error(self, title: str, message: str):
