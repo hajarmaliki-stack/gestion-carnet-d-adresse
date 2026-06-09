@@ -100,6 +100,7 @@
             <thead>
                 <tr>
                     <th>Nom</th>
+                    <th>Adresse</th>
                     <th>Catégorie</th>
                     <th>Email</th>
                     <th>Téléphone</th>
@@ -113,10 +114,8 @@
                 <tr onclick="toggleDetails('details-{{ loop.index }}')" class="contact-row">
                     <td class="td-nom">
                         <span class="contact-name">{{ contact.nom }}</span>
-                        {% if contact.adresse %}
-                        <span class="contact-addr">{{ contact.adresse }}</span>
-                        {% endif %}
                     </td>
+                    <td>{{ contact.adresse or '—' }}</td>
                     <td>
                         <span class="badge badge-{{ contact.categorie|lower|replace(' ','') }}">
                             {{ contact.categorie }}
