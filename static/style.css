@@ -198,8 +198,7 @@ table tr:hover {
 }
 
 .actions-td {
-    display: flex;
-    gap: 5px;
+    white-space: nowrap;
 }
 
 /* Actions bar */
@@ -445,8 +444,8 @@ footer {
 }
 
 /* ── Tableau étendu ────────────────────────────────────── */
-.table-wrapper {
-    overflow-x: auto;
+.table-wrapper table tbody tr td {
+    vertical-align: middle;
 }
 .contact-row {
     cursor: pointer;
