@@ -12,7 +12,7 @@
             <a href="{{ url_for('index') }}" class="btn-clear">✕ Effacer</a>
         {% endif %}
     </form>
-    <a href="{{ url_for('export') }}" class="btn btn-export">📥 Exporter CSV</a>
+    <a href="{{ url_for('export') }}" class="btn btn-export">Exporter CSV</a>
 </div>
 
 <!-- ══ Filtres par catégorie (Partie 8) ══ -->
@@ -25,12 +25,6 @@
     <a href="{{ url_for('index', categorie=cat) }}"
        class="cat-chip cat-chip-{{ cat|lower|replace(' ','') }}
               {% if active_category == cat %}cat-chip-active{% endif %}">
-        {% if cat == 'Patient' %}🧑‍⚕️
-        {% elif cat == 'Fournisseur' %}📦
-        {% elif cat == 'Laboratoire' %}🧪
-        {% elif cat == 'Médecin' %}👨‍⚕️
-        {% elif cat == 'Pharmacie' %}💊
-        {% else %}📁{% endif %}
         {{ cat }}
     </a>
     {% endfor %}
@@ -41,7 +35,7 @@
 
     <!-- Formulaire Ajouter -->
     <div class="form-panel">
-        <h3>➕ Ajouter un Contact</h3>
+        <h3>Ajouter un Contact</h3>
         <form method="POST" action="{{ url_for('add') }}">
 
             <div class="form-group">
@@ -70,12 +64,6 @@
                 <select name="categorie" class="form-select">
                     {% for cat in categories %}
                     <option value="{{ cat }}">
-                        {% if cat == 'Patient' %}🧑‍⚕️
-                        {% elif cat == 'Fournisseur' %}📦
-                        {% elif cat == 'Laboratoire' %}🧪
-                        {% elif cat == 'Médecin' %}👨‍⚕️
-                        {% elif cat == 'Pharmacie' %}💊
-                        {% else %}📁{% endif %}
                         {{ cat }}
                     </option>
                     {% endfor %}
@@ -100,7 +88,7 @@
 
     <!-- Liste des contacts -->
     <div class="list-panel">
-        <h3>📋 Liste des Contacts
+        <h3>Liste des Contacts
             {% if active_category %}
                 <span class="active-filter-badge">{{ active_category }}</span>
             {% endif %}
@@ -126,17 +114,11 @@
                     <td class="td-nom">
                         <span class="contact-name">{{ contact.nom }}</span>
                         {% if contact.adresse %}
-                        <span class="contact-addr">📍 {{ contact.adresse }}</span>
+                        <span class="contact-addr">{{ contact.adresse }}</span>
                         {% endif %}
                     </td>
                     <td>
                         <span class="badge badge-{{ contact.categorie|lower|replace(' ','') }}">
-                            {% if contact.categorie == 'Patient' %}🧑‍⚕️
-                            {% elif contact.categorie == 'Fournisseur' %}📦
-                            {% elif contact.categorie == 'Laboratoire' %}🧪
-                            {% elif contact.categorie == 'Médecin' %}👨‍⚕️
-                            {% elif contact.categorie == 'Pharmacie' %}💊
-                            {% else %}📁{% endif %}
                             {{ contact.categorie }}
                         </span>
                     </td>
@@ -170,11 +152,8 @@
         </div>
         {% else %}
             <div class="empty-state">
-                <div class="empty-icon">🔍</div>
+                <div class="empty-icon"></div>
                 <p>Aucun contact trouvé.</p>
-                {% if active_category or search_query %}
-                <a href="{{ url_for('index') }}" class="btn btn-primary">Voir tous les contacts</a>
-                {% endif %}
             </div>
         {% endif %}
     </div>
@@ -184,7 +163,7 @@
 <div id="editModal" class="modal">
     <div class="modal-content modal-wide">
         <span class="close-btn" onclick="closeEditModal()">&times;</span>
-        <h3>✏️ Modifier le Contact</h3>
+        <h3>Modifier le Contact</h3>
         <form id="editForm" method="POST" action="">
 
             <div class="modal-cols">
@@ -228,7 +207,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">
-                💾 Enregistrer les modifications
+                Enregistrer les modifications
             </button>
         </form>
     </div>

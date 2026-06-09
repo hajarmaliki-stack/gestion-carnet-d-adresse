@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 import os
-import json
 from auth import Authenticator
 from adresse_book import AdressBook
 from contact import Contact
-from communicator import send_email, get_whatsapp_link, MEDICAL_TEMPLATES
+from communicator import send_email, get_whatsapp_link
 from database import CATEGORIES
 
 app = Flask(__name__)
@@ -159,8 +158,6 @@ def communicate(nom):
         'compose_email.html',
         contact=contact,
         wa_link=wa_link,
-        templates=MEDICAL_TEMPLATES,
-        templates_json=json.dumps(MEDICAL_TEMPLATES)
     )
 
 
