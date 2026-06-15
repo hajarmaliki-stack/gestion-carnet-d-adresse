@@ -26,16 +26,33 @@ class AdressBook:
                  contact.fonction, contact.entreprise)
             )
             conn.commit()
-            print("Contact ajouté avec succès !")
             self.load_contacts()
-            success = True
-        except sqlite3.IntegrityError:
-            print("Un contact avec ce nom ou ce numéro existe déjà.")
-            success = False
+            return True, ""
+        except Exception as e:
+            err = str(e).lower()
+            # Détecter quel champ est en doublon
+            email_dup = "email" in err
+            num_dup   = any(x in err for x in ["num", "phone", "téléphone"])
+            # Vérifier manuellement si email ou num existe déjà
+            cursor2 = conn.cursor()
+            cursor2.execute("SELECT email, num FROM contacts WHERE email=? OR num=?",
+                            (contact.email, contact.num))
+            rows = cursor2.fetchall()
+            existing_emails = {r[0] for r in rows}
+            existing_nums   = {r[1] for r in rows}
+            email_dup = contact.email in existing_emails
+            num_dup   = contact.num   in existing_nums
+            if email_dup and num_dup:
+                msg = "Cet email ET ce numéro de téléphone existent déjà."
+            elif email_dup:
+                msg = f"L'email '{contact.email}' est déjà utilisé par un autre contact."
+            elif num_dup:
+                msg = f"Le numéro '{contact.num}' est déjà utilisé par un autre contact."
+            else:
+                msg = "Ce contact existe déjà (doublon détecté)."
+            return False, msg
         finally:
             conn.close()
-
-        return success
 
     def remove_contact(self, value: str):
         conn = get_connection()
@@ -122,14 +139,34 @@ class AdressBook:
             )
             conn.commit()
             success = cursor.rowcount > 0
+            msg = ""
         except sqlite3.IntegrityError:
+            # Vérifier quel champ est en doublon
+            cursor2 = conn.cursor()
+            cursor2.execute(
+                "SELECT email, num FROM contacts WHERE (email=? OR num=?) AND nom != ?",
+                (new_contact.email, new_contact.num, old_nom)
+            )
+            rows = cursor2.fetchall()
+            existing_emails = {r[0] for r in rows}
+            existing_nums   = {r[1] for r in rows}
+            email_dup = new_contact.email in existing_emails
+            num_dup   = new_contact.num   in existing_nums
+            if email_dup and num_dup:
+                msg = "Cet email ET ce numéro de téléphone existent déjà."
+            elif email_dup:
+                msg = f"L'email '{new_contact.email}' est déjà utilisé par un autre contact."
+            elif num_dup:
+                msg = f"Le numéro '{new_contact.num}' est déjà utilisé par un autre contact."
+            else:
+                msg = "Doublon détecté lors de la mise à jour."
             success = False
         finally:
             conn.close()
 
         if success:
             self.load_contacts()
-        return success
+        return success, msg
 
     def search_contact(self, query):
         """Recherche des contacts par nom, numéro, catégorie ou entreprise."""
@@ -231,4 +268,3 @@ class AdressBook:
         success = cursor.rowcount > 0
         conn.close()
         return success
-

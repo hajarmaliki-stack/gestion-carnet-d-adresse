@@ -21,8 +21,8 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS contacts (
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom       TEXT NOT NULL UNIQUE,
-            email     TEXT NOT NULL,
+            nom       TEXT NOT NULL,
+            email     TEXT NOT NULL UNIQUE,
             num       TEXT NOT NULL UNIQUE
         )
     ''')
