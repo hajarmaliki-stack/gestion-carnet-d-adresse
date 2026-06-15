@@ -49,6 +49,9 @@ def index():
         book.load_contacts()
         contacts = book.contacts
 
+    contacts = sorted(contacts, key=lambda c: c.nom.lower())
+
+
     return render_template('index.html',
                            contacts=contacts,
                            search_query=query,
@@ -71,7 +74,8 @@ def add():
     try:
         new_contact = Contact(nom, email, numero,
                               categorie, adresse, fonction, entreprise)
-        if book.add_contact(new_contact):
+        success, msg = book.add_contact(new_contact)
+        if success:
             flash("Contact ajouté avec succès", "success")
         else:
             flash("Ce contact (nom ou numéro) existe déjà", "error")
@@ -108,8 +112,11 @@ def edit(old_nom):
     try:
         new_contact = Contact(new_nom, new_email, new_numero,
                               categorie, adresse, fonction, entreprise)
-        if book.update_contact(old_nom, new_contact):
+        
+        success, msg = book.update_contact(old_nom, new_contact)
+        if success:
             flash("Contact mis à jour avec succès", "success")
+
         else:
             flash("Erreur lors de la mise à jour (doublon possible)", "error")
     except AssertionError as e:
